@@ -1,9 +1,9 @@
 import React, { useContext, useState } from "react";
 import { Platform } from "react-native";
 import styled from "styled-components";
-import {AntDesign} from "react-native-vector-icons";
-import * as Permissions from "react-native-permissions";
-import * as ImagePicker from "react-native-image-picker";
+import { AntDesign } from "@expo/vector-icons";
+import * as Permissions from "expo-permissions";
+import * as ImagePicker from "expo-image-picker";
 
 import { FirebaseContext } from "../context/FirebaseContext";
 import { UserContext } from "../context/UserContext";

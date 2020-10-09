@@ -14,6 +14,7 @@ target 'SocialApp' do
   pod 'Permission-Microphone', :path => "#{permissions_path}/Microphone.podspec"
   pod 'Permission-Notifications', :path => "#{permissions_path}/Notifications.podspec"
   pod 'Permission-PhotoLibrary', :path => "#{permissions_path}/PhotoLibrary.podspec"
+  pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
 
   target 'SocialAppTests' do
     inherit! :complete
@@ -27,6 +28,34 @@ target 'SocialApp' do
   use_flipper!
   post_install do |installer|
     flipper_post_install(installer)
+    installer.pods_project.targets.each do |target|
+
+          # The following is needed to ensure the "archive" step works in XCode.
+          # It removes React & Yoga from the Pods project, as it is already included in the main project.
+          # Without this, you'd see errors when you archive like:
+          # "Multiple commands produce ... libReact.a"
+          # "Multiple commands produce ... libyoga.a"
+
+#          targets_to_ignore = %w(React yoga)
+#
+#          if targets_to_ignore.include? target.name
+#            target.remove_from_project
+#          end
+          if target.name == "React"
+                target.remove_from_project
+              end
+              
+              if target.name == "yoga"
+                target.remove_from_project
+              end
+    end
+
+            installer.pods_project.targets.each do |target|
+              target.build_configurations.each do |config|
+                config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf'
+              end
+            end
+
   end
 end
 

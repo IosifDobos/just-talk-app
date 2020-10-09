@@ -1,72 +1,37 @@
 import React, { useContext, useState } from "react";
-import { Platform } from "react-native";
 import styled from "styled-components";
-import {AntDesign} from "react-native-vector-icons";
-import * as Permissions from "react-native-permissions";
-import * as ImagePicker from "react-native-image-picker";
 
 import { FirebaseContext } from "../context/FirebaseContext";
 import { UserContext } from "../context/UserContext";
 
 import Text from "../components/Text";
 
-export default SignUpScreen = ({ navigation }) => {
-    const [username, setUsername] = useState();
+export default SignInScreen = ({ navigation }) => {
     const [email, setEmail] = useState();
     const [password, setPassword] = useState();
     const [loading, setLoading] = useState(false);
-    const [profilePhoto, setProfilePhoto] = useState();
     const firebase = useContext(FirebaseContext);
     const [_, setUser] = useContext(UserContext);
 
-    const getPermission = async () => {
-        if (Platform.OS !== "web") {
-            const { status } = await Permissions.askAsync(Permissions.CAMERA_ROLL);
-
-            return status;
-        }
-    };
-
-    const pickImage = async () => {
-        try {
-            let result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                allowsEditing: true,
-                aspect: [1, 1],
-                quality: 0.5,
-            });
-
-            if (!result.cancelled) {
-                setProfilePhoto(result.uri);
-            }
-        } catch (error) {
-            console.log("Error @pickImage: ", error);
-        }
-    };
-
-    const addProfilePhoto = async () => {
-        const status = await getPermission();
-
-        if (status !== "granted") {
-            alert("We need permission to access your camera roll.");
-
-            return;
-        }
-
-        pickImage();
-    };
-
-    const signUp = async () => {
+    const signIn = async () => {
         setLoading(true);
 
-        const user = { username, email, password, profilePhoto };
-
         try {
-            const createdUser = await firebase.createUser(user);
+            await firebase.signIn(email, password);
 
-            setUser({ ...createdUser, isLoggedIn: true });
+            const uid = firebase.getCurrentUser().uid;
+
+            const userInfo = await firebase.getUserInfo(uid);
+
+            setUser({
+                username: userInfo.username,
+                email: userInfo.email,
+                uid,
+                profilePhotoUrl: userInfo.profilePhotoUrl,
+                isLoggedIn: true,
+            });
         } catch (error) {
-            console.log("Error @signUp: ", error);
+            alert(error.message);
         } finally {
             setLoading(false);
         }
@@ -76,38 +41,18 @@ export default SignUpScreen = ({ navigation }) => {
         <Container>
             <Main>
                 <Text title semi center>
-                    Sign up to get started.
+                    Welcome back.
                 </Text>
             </Main>
 
-            <ProfilePhotoContainer onPress={addProfilePhoto}>
-                {profilePhoto ? (
-                    <ProfilePhoto source={{ uri: profilePhoto }} />
-                ) : (
-                    <DefaultProfilePhoto>
-                        <AntDesign name="plus" size={24} color="#ffffff" />
-                    </DefaultProfilePhoto>
-                )}
-            </ProfilePhotoContainer>
-
             <Auth>
-                <AuthContainer>
-                    <AuthTitle>Username</AuthTitle>
-                    <AuthField
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        autoFocus={true}
-                        onChangeText={(username) => setUsername(username.trim())}
-                        value={username}
-                    />
-                </AuthContainer>
-
                 <AuthContainer>
                     <AuthTitle>Email Address</AuthTitle>
                     <AuthField
                         autoCapitalize="none"
                         autoCompleteType="email"
                         autoCorrect={false}
+                        autoFocus={true}
                         keyboardType="email-address"
                         onChangeText={(email) => setEmail(email.trim())}
                         value={email}
@@ -127,24 +72,24 @@ export default SignUpScreen = ({ navigation }) => {
                 </AuthContainer>
             </Auth>
 
-            <SignUpContainer onPress={signUp} disabled={loading}>
+            <SignInContainer onPress={signIn} disabled={loading}>
                 {loading ? (
                     <Loading />
                 ) : (
                     <Text bold center color="#ffffff">
-                        Sign Up
-                    </Text>
-                )}
-            </SignUpContainer>
-
-            <SignIn onPress={() => navigation.navigate("SignIn")}>
-                <Text small center>
-                    Already have an account?{" "}
-                    <Text bold color="#8022d9">
                         Sign In
                     </Text>
+                )}
+            </SignInContainer>
+
+            <SignUp onPress={() => navigation.navigate("SignUp")}>
+                <Text small center>
+                    New to SocialApp?{" "}
+                    <Text bold color="#8022d9">
+                        Sign Up
+                    </Text>
                 </Text>
-            </SignIn>
+            </SignUp>
 
             <HeaderGraphic>
                 <RightCircle />
@@ -160,31 +105,11 @@ const Container = styled.View`
 `;
 
 const Main = styled.View`
-    margin-top: 160px;
-`;
-
-const ProfilePhotoContainer = styled.TouchableOpacity`
-    background-color: #e1e2e6;
-    width: 80px;
-    height: 80px;
-    border-radius: 40px;
-    align-self: center;
-    margin-top: 16px;
-    overflow: hidden;
-`;
-
-const DefaultProfilePhoto = styled.View`
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-`;
-
-const ProfilePhoto = styled.Image`
-    flex: 1;
+    margin-top: 192px;
 `;
 
 const Auth = styled.View`
-    margin: 16px 32px 32px;
+    margin: 64px 32px 32px;
 `;
 
 const AuthContainer = styled.View`
@@ -204,7 +129,7 @@ const AuthField = styled.TextInput`
     height: 48px;
 `;
 
-const SignUpContainer = styled.TouchableOpacity`
+const SignInContainer = styled.TouchableOpacity`
     margin: 0 32px;
     height: 48px;
     align-items: center;
@@ -218,7 +143,7 @@ const Loading = styled.ActivityIndicator.attrs((props) => ({
     size: "small",
 }))``;
 
-const SignIn = styled.TouchableOpacity`
+const SignUp = styled.TouchableOpacity`
     margin-top: 16px;
 `;
 
